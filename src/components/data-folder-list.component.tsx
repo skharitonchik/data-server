@@ -10,7 +10,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import Divider from '@mui/material/Divider';
 
 async function loadDataFolderFiles() {
-  const response = await fetch('http://localhost:8088/data');
+  const response = await fetch('/data');
   return await response.json();
 }
 
@@ -22,14 +22,14 @@ export const DataFolderList = () => {
     console.info('%c  SERGEY e.target', 'background: #222; color: #bada55', e.target.dataset);
     const { filename } = e.target.dataset;
 
-    window.open(`http://localhost:8088/data/open/${filename}`, '_blank');
+    window.open(`/data/open/${filename}`, '_blank');
   };
 
   const downloadFile = (e: any) => {
     console.info('%c  SERGEY e.target', 'background: #222; color: #bada55', e.target.dataset);
     const { filename } = e.target.dataset;
 
-    window.open(`http://localhost:8088/data/${filename}`, '_blank');
+    window.open(`/data/${filename}`, '_blank');
   };
   const uploadFile = () => {};
 
