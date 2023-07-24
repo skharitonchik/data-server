@@ -22,6 +22,7 @@
     "@tanstack/react-query": "^4.29.3",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "adm-zip": "^0.5.10",
     "body-parser": "^1.19.2",
     "cors": "^2.8.5",
     "express": "^4.17.3",

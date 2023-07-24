@@ -7,7 +7,7 @@ async function loadDataFolderFiles() {
 }
 
 export const useLoadDataFolderActions = () => {
-  const { data, isSuccess } = useQuery({ queryKey: ['todos'], queryFn: loadDataFolderFiles });
+  const { data, isSuccess } = useQuery({ queryKey: ['data_files'], queryFn: loadDataFolderFiles });
 
   return {
     dataFolderFiles: data,

@@ -7,6 +7,7 @@ import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import AddToDriveIcon from '@mui/icons-material/AddToDrive';
+
 import Divider from '@mui/material/Divider';
 import { BASE_URL } from '../common';
 
@@ -16,13 +17,13 @@ export const DataFolderList = () => {
   const openFile = (e: any) => {
     const { filename } = e.target.dataset;
 
-    window.open(`${BASE_URL}/data/open/${filename}`, '_blank');
+    window.open(`${BASE_URL}/file/open/${filename}`, '_blank');
   };
 
   const downloadFile = (e: any) => {
     const { filename } = e.target.dataset;
 
-    window.open(`${BASE_URL}/data/download/${filename}`, '_blank');
+    window.open(`${BASE_URL}/file/download/${filename}`, '_blank');
   };
   const uploadFile = () => {};
 
@@ -43,22 +44,24 @@ export const DataFolderList = () => {
         <Typography sx={{ mb: 1.5 }} color="text.secondary">
           files:
         </Typography>
-        {files.map((f, i) => (
-          <Box key={`${i}-${f}`} sx={{ display: 'flex', mb: 2 }}>
-            <Typography variant="body2" sx={{ p: 1, minWidth: 250 }}>
-              {f}
-            </Typography>
-            <Button data-filename={f} onClick={downloadFile}>
-              Download
-            </Button>
-            <Button data-filename={f} onClick={openFile}>
-              Open
-            </Button>
-            <Button data-filename={f} onClick={uploadFile}>
-              Upload
-            </Button>
-          </Box>
-        ))}
+        <Box sx={{ maxHeight: 500, overflowY: 'auto' }}>
+          {files.map((f, i) => (
+            <Box key={`${i}-${f}`} sx={{ display: 'flex', mb: 2 }}>
+              <Typography variant="body2" sx={{ p: 1, minWidth: 250 }}>
+                {f}
+              </Typography>
+              <Button data-filename={f} onClick={downloadFile}>
+                Download
+              </Button>
+              <Button data-filename={f} onClick={openFile}>
+                Open
+              </Button>
+              <Button data-filename={f} onClick={uploadFile}>
+                Upload
+              </Button>
+            </Box>
+          ))}
+        </Box>
       </CardContent>
       <CardActions>
         <Button size="small">Learn More</Button>

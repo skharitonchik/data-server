@@ -1,5 +1,42 @@
-const { readFileSync, readdirSync } = require('fs');
+const { readFileSync, readdirSync, lstatSync } = require('fs');
 const path = require('path');
+const AdmZip = require('adm-zip');
+
+async function createZipArchive(globalPath, name) {
+  try {
+    const zip = new AdmZip();
+    const outputFile = `${path.resolve(__dirname, `../../backups/${name}-${new Date().toJSON()}`)}.zip`;
+
+    zip.addLocalFolder(path.resolve(__dirname, globalPath));
+
+    zip.writeZip(outputFile);
+
+    console.log(`Created ${outputFile} successfully`);
+  } catch (e) {
+    console.log(`Something went wrong. ${e}`);
+  }
+}
+
+const getFolderFiles = (globalPath) => {
+  const files = readdirSync(path.resolve(__dirname, globalPath));
+  const filesToSend = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+
+    const isDir = lstatSync(path.resolve(__dirname, `${globalPath}/${file}`)).isDirectory();
+
+    if (isDir) {
+      const innerDirrFiles = readdirSync(path.resolve(__dirname, `${globalPath}/${file}`));
+
+      filesToSend.push(...innerDirrFiles.map((f) => `${file}/${f}`));
+    } else {
+      filesToSend.push(file);
+    }
+  }
+
+  return filesToSend;
+};
 
 function formatBytes(bytes, decimals = 2) {
   if (!+bytes) return '0 Bytes';
@@ -14,7 +51,7 @@ function formatBytes(bytes, decimals = 2) {
 }
 
 const initDataFoldersActions = (app) => {
-  app.get('/data/open/:filename', (req, res) => {
+  app.get('/file/open/:filename', (req, res) => {
     const filename = req.params.filename;
     const fileContent = readFileSync(path.resolve(__dirname, `../../data/${filename}`));
 
@@ -26,27 +63,32 @@ const initDataFoldersActions = (app) => {
   });
 
   app.get('/data', (req, res) => {
-    const files = readdirSync(path.resolve(__dirname, '../../data'));
+    const filesToSend = getFolderFiles('../../data');
 
-    console.log(path.basename(' ./data'));
-    console.log(__dirname, 'dirname');
-    console.log(path.resolve(__dirname, '../../data'), 'resolve');
     console.log('GET: /data');
 
-    // console.info('%c  SERGEY os.version()', 'background: #222; color: #bada55', os.version());
-    // console.info('%c  SERGEY os.os.arch()()', 'background: #222; color: #bada55', os.arch());
-    // console.info('%c  SERGEY os.cpus()', 'background: #222; color: #bada55', os.cpus());
-    // console.info('%c  SERGEY os.platform()', 'background: #222; color: #bada55', os.platform());
-    // console.info('%c  SERGEY os.type()', 'background: #222; color: #bada55', os.type());
-    // console.info('%c  SERGEY os.version()', 'background: #222; color: #bada55', os.version());
-    // console.info('%c  SERGEY os.totalmem()', 'background: #222; color: #bada55', os.totalmem());
-    // console.info('%c  SERGEY os.totalmem() converted', 'background: #222; color: #bada55', formatBytes(os.totalmem()));
-
-    res.send(files);
+    res.send(filesToSend);
     res.end();
   });
 
-  app.get('/data/download/:filename', (req, res) => {
+  app.get('/backups', (req, res) => {
+    const filesToSend = getFolderFiles('../../backups');
+
+    console.log('GET: /backups');
+
+    res.send(filesToSend);
+    res.end();
+  });
+
+  app.get('/backups-create', (req, res) => {
+    createZipArchive('../../data/prod', 'prod').then(() => {
+      console.log('GET: /backups');
+
+      res.end();
+    });
+  });
+
+  app.get('/file/download/:filename', (req, res) => {
     const filename = req.params.filename;
 
     console.log(`DOWNLOAD: /data/${filename}`);
