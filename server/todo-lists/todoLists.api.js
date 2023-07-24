@@ -1,10 +1,7 @@
-const {writeFileSync, readFileSync, readdirSync, statSync} = require('fs');
+const { writeFileSync, readFileSync, readdirSync, statSync } = require('fs');
 
-const FILE_PATH = "./data/todoLists.json"
-
-
-const getAllTodoLists = () => {
-    return readFileSync(FILE_PATH, {});
-}
+const getAllTodoLists = (filePath) => {
+  return readFileSync(filePath, {});
+};
 
 exports.getAllTodoLists = getAllTodoLists;
