@@ -3,7 +3,16 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const os = require('os');
 const { writeFileSync, readFileSync, readdirSync, statSync } = require('fs');
-const { getAllTodoLists } = require('./server/todo-lists/todoLists.api');
+const { initTodoListsRoutes } = require('./server/todo-lists/todoLists.routes');
+const { initDataFoldersActions } = require('./server/data-folder/dataFolders.routes');
+const { initRoutes } = require('./server/financial/financial.routes');
+const path = require('path');
+let crypto;
+try {
+  crypto = require('node:crypto');
+} catch (err) {
+  console.error('crypto support is disabled!');
+}
 
 const app = express();
 
@@ -15,7 +24,141 @@ app.use(express.static('public'));
 app.use(express.static('src'));
 
 const port = 8088;
-const FILE_PATH = './data/todoLists.json';
+const ENVIRONMENT = 'prod';
+
+const FILE_PATHS = {
+  dev: {
+    categories: 'categories.json',
+    users: 'users.json',
+    cards: 'cards.json',
+    currencies: 'currencies.json',
+    transactions: 'transactions.json',
+    todos: 'todoLists.json',
+  },
+  prod: {
+    categories: 'prod/categories.prod.json',
+    users: 'prod/users.prod.json',
+    cards: 'prod/cards.prod.json',
+    currencies: 'prod/currencies.prod.json',
+    transactions: 'prod/transactions.prod.json',
+    todos: 'prod/todoLists.prod.json',
+  },
+};
+const filePaths = FILE_PATHS[ENVIRONMENT];
+
+initTodoListsRoutes(app, filePaths.todos);
+initDataFoldersActions(app);
+
+initRoutes(app, 'categories', filePaths.categories);
+initRoutes(app, 'users', filePaths.users);
+initRoutes(app, 'cards', filePaths.cards);
+initRoutes(app, 'currencies', filePaths.currencies);
+initRoutes(app, 'transactions', filePaths.transactions);
+
+const read = (filePath) => {
+  return readFileSync(path.resolve(__dirname, `./data/${filePath}`));
+};
+
+app.post(`/add/transaction`, (req, res) => {
+  const transactionsData = JSON.parse(read(filePaths.transactions));
+  const cardsData = JSON.parse(read(filePaths.cards));
+
+  const { card, type, money, date, category, notes } = req.body;
+
+  console.log(`POST: add transaction request`);
+
+  if (type !== 0 && type !== 1) {
+    res.send(JSON.stringify('Wrong type set, this request working only with 1 or 0'));
+    return;
+  }
+
+  const savedCard = cardsData.find((c) => c.id === card);
+
+  if (type === 1) {
+    savedCard.money = (parseFloat(savedCard.money) + parseFloat(money)).toFixed(2);
+  }
+
+  if (type === 0) {
+    savedCard.money = (parseFloat(savedCard.money) - parseFloat(money)).toFixed(2);
+
+    console.info('%c  SERGEY money', 'background: #222; color: #bada55', money);
+    console.info('%c  SERGEY savedCard.money', 'background: #222; color: #bada55', savedCard.money);
+  }
+
+  transactionsData.push({
+    id: crypto.randomUUID(),
+    date,
+    card,
+    category,
+    money,
+    type,
+    notes,
+  });
+
+  try {
+    writeFileSync(path.resolve(__dirname, `./data/${filePaths.cards}`), JSON.stringify(cardsData, null, 2), 'utf8');
+
+    writeFileSync(
+      path.resolve(__dirname, `./data/${filePaths.transactions}`),
+      JSON.stringify(transactionsData, null, 2),
+      'utf8',
+    );
+
+    console.log('Data successfully saved to disk');
+    res.send(JSON.stringify('Data successfully saved to disk'));
+  } catch (error) {
+    console.log('An error has occurred ', error);
+    res.send(JSON.stringify(`An error has occurred ${error}`));
+  }
+});
+
+app.post(`/add/transaction-transfer`, (req, res) => {
+  const transactionsData = JSON.parse(read(filePaths.transactions));
+  const cardsData = JSON.parse(read(filePaths.cards));
+
+  const { from, to } = req.body;
+
+  console.log(`POST: add transaction-transfer request`);
+
+  const fromCard = from.card;
+  const fromMoney = from.money;
+  const toCard = to.card;
+  const toMoney = to.money;
+
+  const savedFromCard = cardsData.find((c) => c.id === fromCard);
+  const savedToCard = cardsData.find((c) => c.id === toCard);
+
+  savedFromCard.money = (parseFloat(savedFromCard.money) - parseFloat(fromMoney)).toFixed(2);
+  savedToCard.money = (parseFloat(savedToCard.money) + parseFloat(toMoney)).toFixed(2);
+
+  transactionsData.push({
+    id: crypto.randomUUID(),
+    ...from,
+    type: 20,
+  });
+
+  transactionsData.push({
+    id: crypto.randomUUID(),
+    ...to,
+    type: 21,
+  });
+
+  try {
+    writeFileSync(path.resolve(__dirname, `./data/${filePaths.cards}`), JSON.stringify(cardsData, null, 2), 'utf8');
+
+    writeFileSync(
+      path.resolve(__dirname, `./data/${filePaths.transactions}`),
+      JSON.stringify(transactionsData, null, 2),
+      'utf8',
+    );
+
+    console.log('Data successfully saved to disk');
+    res.send(JSON.stringify('Data successfully saved to disk'));
+  } catch (error) {
+    console.log('An error has occurred ', error);
+    res.send(JSON.stringify(`An error has occurred ${error}`));
+  }
+});
 
 app.get('/', (req, res) => {
   const html = readFileSync('./build/index.html');
@@ -26,245 +169,6 @@ app.get('/', (req, res) => {
   res.write(html);
   res.end();
 });
-function formatBytes(bytes, decimals = 2) {
-  if (!+bytes) return '0 Bytes';
-
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-}
-
-app.get('/data', (req, res) => {
-  const files = readdirSync('./data');
-
-  console.log('GET: /data');
-
-  console.info('%c  SERGEY os.version()', 'background: #222; color: #bada55', os.version());
-  console.info('%c  SERGEY os.os.arch()()', 'background: #222; color: #bada55', os.arch());
-  console.info('%c  SERGEY os.cpus()', 'background: #222; color: #bada55', os.cpus());
-  console.info('%c  SERGEY os.platform()', 'background: #222; color: #bada55', os.platform());
-  console.info('%c  SERGEY os.type()', 'background: #222; color: #bada55', os.type());
-  console.info('%c  SERGEY os.version()', 'background: #222; color: #bada55', os.version());
-  console.info('%c  SERGEY os.totalmem()', 'background: #222; color: #bada55', os.totalmem());
-  console.info('%c  SERGEY os.totalmem() converted', 'background: #222; color: #bada55', formatBytes(os.totalmem()));
-
-  res.send(files);
-});
-
-app.get('/data/:filename', (req, res) => {
-  const filename = req.params.filename;
-
-  console.log(`DOWNLOAD: /data/${filename}`);
-
-  res.download(`./data/${filename}`);
-});
-app.get('/data/open/:filename', (req, res) => {
-  const filename = req.params.filename;
-  const fileContent = readFileSync(`./data/${filename}`);
-
-  console.log(`GET: OPEN: /data/${filename}`);
-
-  res.writeHeader(200, { 'Content-Type': 'application/json' });
-  res.write(fileContent);
-  res.end();
-});
-
-app.get('/read', (req, res) => {
-  const data = getAllTodoLists();
-
-  console.log('GET: read request');
-
-  res.send(data);
-});
-
-app.get('/getAllWeek', (req, res) => {
-  const data = readFileSync(FILE_PATH, {});
-
-  console.log('GET: getAllWeek request');
-
-  const todoGroups = JSON.parse(data);
-
-  let weekTodos = [];
-
-  todoGroups.forEach((g) => {
-    weekTodos = [
-      ...weekTodos,
-      ...g.todos.filter((i) => {
-        if (i.isWeekTodo) {
-          i.groupTitle = g.groupTitle;
-        }
-
-        return i.isWeekTodo;
-      }),
-    ];
-  });
-
-  res.send(weekTodos);
-});
-
-app.post('/update', (req, res) => {
-  console.log('POST: update request');
-
-  const clearedData = clearData(req.body);
-
-  try {
-    writeFileSync(FILE_PATH, JSON.stringify(clearedData, null, 2), 'utf8');
-    console.log('Data successfully saved to disk');
-  } catch (error) {
-    console.log('An error has occurred ', error);
-    res.send(`An error has occurred ${error}`);
-  }
-
-  res.send('Data written successfully to disk!');
-});
-
-app.get('/update/sort-by-done', (req, res) => {
-  console.log('GET: sort todos by done status');
-
-  const data = readFileSync(FILE_PATH, {});
-
-  const todoGroups = JSON.parse(data);
-
-  todoGroups.forEach((g) => {
-    g.todos = [...g.todos.filter((i) => !i.isDone), ...g.todos.filter((i) => i.isDone)];
-  });
-
-  try {
-    writeFileSync(FILE_PATH, JSON.stringify(todoGroups, null, 2), 'utf8');
-    console.log('SORT successfully saved');
-  } catch (error) {
-    console.log('An error has occurred ', error);
-    res.send(`An error has occurred ${error}`);
-  }
-
-  res.send('Data written successfully to disk!');
-});
-
-app.get('/update/sort-by-length', (req, res) => {
-  console.log('GET: sort group by items count');
-
-  const data = readFileSync(FILE_PATH, {});
-
-  let todoGroups = JSON.parse(data);
-
-  todoGroups = todoGroups.sort((a, b) => {
-    if (a.todos.length < b.todos.length) {
-      return 1;
-    }
-
-    if (a.todos.length > b.todos.length) {
-      return -1;
-    }
-
-    return 0;
-  });
-
-  try {
-    writeFileSync(FILE_PATH, JSON.stringify(todoGroups, null, 2), 'utf8');
-    console.log('SORT successfully saved');
-  } catch (error) {
-    console.log('An error has occurred ', error);
-    res.send(`An error has occurred ${error}`);
-  }
-
-  res.send('Data written successfully to disk!');
-});
-
-app.post('/update/todo-done', (req, res) => {
-  console.log('POST: update todo request');
-
-  const { todoTitle, groupTitle, isDone } = req.body;
-
-  const data = readFileSync(FILE_PATH, {});
-
-  const todoGroups = JSON.parse(data);
-
-  todoGroups.forEach((g) => {
-    if (g.groupTitle === groupTitle) {
-      g.todos.forEach((t) => {
-        if (t.title === todoTitle) {
-          t.isDone = isDone;
-        }
-      });
-    }
-  });
-
-  try {
-    writeFileSync(FILE_PATH, JSON.stringify(todoGroups, null, 2), 'utf8');
-    console.log('TODO successfully saved');
-  } catch (error) {
-    console.log('An error has occurred ', error);
-    res.send(`An error has occurred ${error}`);
-  }
-
-  res.send('Data written successfully to disk!');
-});
-
-app.post('/update/todo-week', (req, res) => {
-  console.log('POST: update todo week request');
-
-  const { todoTitle, groupTitle, weekNumber, weekDay, isDone } = req.body;
-
-  const data = readFileSync(FILE_PATH, {});
-
-  const todoGroups = JSON.parse(data);
-
-  todoGroups.forEach((g) => {
-    if (g.groupTitle === groupTitle) {
-      g.todos.forEach((t) => {
-        if (t.title === todoTitle) {
-          t.weekNumber = weekNumber;
-          t.weekDay = weekDay;
-          t.isDone = isDone;
-        }
-      });
-    }
-  });
-
-  try {
-    writeFileSync(FILE_PATH, JSON.stringify(todoGroups, null, 2), 'utf8');
-    console.log('TODO successfully saved');
-  } catch (error) {
-    console.log('An error has occurred ', error);
-    res.send(`An error has occurred ${error}`);
-  }
-
-  res.send('Data written successfully to disk!');
-});
-
-app.get('/clearDone', (req, res) => {
-  console.log('GET: clear done todos');
-
-  const data = readFileSync(FILE_PATH, {});
-
-  let todoGroups = JSON.parse(data);
-
-  todoGroups.forEach((g) => (g.todos = g.todos.filter((i) => !i.isDone)));
-
-  try {
-    writeFileSync(FILE_PATH, JSON.stringify(todoGroups, null, 2), 'utf8');
-    console.log('CLEAR DONE successfully saved');
-  } catch (error) {
-    console.log('An error has occurred ', error);
-    res.send(`An error has occurred ${error}`);
-  }
-
-  res.send('Data written successfully to disk!');
-});
-
-const clearData = (todoGroups) => {
-  return todoGroups.map((g) => {
-    delete g.newTodoTitle;
-    delete g.isNewAdding;
-    delete g.isListOpen;
-
-    return g;
-  });
-};
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
