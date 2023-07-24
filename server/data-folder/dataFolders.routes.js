@@ -93,8 +93,15 @@ const initDataFoldersActions = (app) => {
 
     console.log(`DOWNLOAD: /data/${filename}`);
 
-    res.download(path.basename(`./data/${filename}`));
-    res.end();
+    res.download(path.resolve(__dirname, `../../data/${filename}`));
+  });
+
+  app.get('/file-backups/download/:filename', (req, res) => {
+    const filename = req.params.filename;
+
+    console.log(`DOWNLOAD: /backups/${filename}`);
+
+    res.download(path.resolve(__dirname, `../../backups/${filename}`));
   });
 };
 

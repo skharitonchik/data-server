@@ -27,7 +27,7 @@ export const BackupsFolderList = () => {
   const downloadFile = (e: any) => {
     const { filename } = e.target.dataset;
 
-    window.open(`${BASE_URL}/file/download/${filename}`, '_blank');
+    window.open(`${BASE_URL}/file-backups/download/${filename}`, '_blank');
   };
   const uploadFile = () => {};
 
