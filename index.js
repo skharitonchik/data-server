@@ -5,6 +5,7 @@ const os = require('os');
 const { writeFileSync, readFileSync, readdirSync, statSync } = require('fs');
 const { initTodoListsRoutes } = require('./server/todo-lists/todoLists.routes');
 const { initDataFoldersActions } = require('./server/data-folder/dataFolders.routes');
+const { initFiltersRoutes } = require('./server/financial/filters.routes');
 const { initRoutes } = require('./server/financial/financial.routes');
 const path = require('path');
 let crypto;
@@ -34,6 +35,7 @@ const FILE_PATHS = {
     currencies: 'currencies.json',
     transactions: 'transactions.json',
     todos: 'todoLists.json',
+    filters: 'filters.json',
   },
   prod: {
     categories: 'prod/categories.prod.json',
@@ -42,12 +44,14 @@ const FILE_PATHS = {
     currencies: 'prod/currencies.prod.json',
     transactions: 'prod/transactions.prod.json',
     todos: 'prod/todoLists.prod.json',
+    filters: 'prod/filters.prod.json',
   },
 };
 const filePaths = FILE_PATHS[ENVIRONMENT];
 
 initTodoListsRoutes(app, filePaths.todos);
 initDataFoldersActions(app);
+initFiltersRoutes(app, path.resolve(__dirname, `./data/${filePaths.filters}`));
 
 initRoutes(app, 'categories', filePaths.categories);
 initRoutes(app, 'users', filePaths.users);
