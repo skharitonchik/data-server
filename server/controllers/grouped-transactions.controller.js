@@ -30,6 +30,9 @@ function getTransactionsGroupedByDay(req, res) {
   const usersMap = new Map();
   const groupedTransactions = {};
   const convertToMap = (data, map) => data.forEach((d) => map.set(d.id, d.name));
+  const isRequestParams = Object.keys(req.body).length !== 0 ? true : false;
+  const requestedUser = isRequestParams ? req.body.user : '';
+  const requestedCategory = isRequestParams ? req.body.category : '';
 
   convertToMap(categoriesData, categoriesMap);
   convertToMap(currenciesData, currenciesMap);
@@ -47,7 +50,15 @@ function getTransactionsGroupedByDay(req, res) {
     const { date, category, card, type, money } = t;
     const formattedDate = dayjs(date).format('YYYY-MM-DD');
     const formattedCard = cardsMap.get(card);
-    const { currency } = formattedCard;
+    const { currency, user } = formattedCard;
+
+    if(req.body.user && user !== req.body.user) {
+      return
+    }
+
+    if(req.body.category && category !== req.body.category) {
+      return
+    }
 
     if (category) {
       t.category = categoriesMap.get(category);
