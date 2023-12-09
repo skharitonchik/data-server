@@ -33,6 +33,9 @@ function getTransactionsGroupedByDay(req, res) {
   const isRequestParams = Object.keys(req.body).length !== 0 ? true : false;
   const requestedUser = isRequestParams ? req.body.user : '';
   const requestedCategory = isRequestParams ? req.body.category : '';
+  const isRequestParams = Object.keys(req.body).length !== 0 ? true : false;
+  const requestedUser = isRequestParams ? req.body.user : '';
+  const requestedCategory = isRequestParams ? req.body.category : '';
 
   convertToMap(categoriesData, categoriesMap);
   convertToMap(currenciesData, currenciesMap);
