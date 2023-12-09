@@ -30,12 +30,6 @@ function getTransactionsGroupedByDay(req, res) {
   const usersMap = new Map();
   const groupedTransactions = {};
   const convertToMap = (data, map) => data.forEach((d) => map.set(d.id, d.name));
-  const isRequestParams = Object.keys(req.body).length !== 0 ? true : false;
-  const requestedUser = isRequestParams ? req.body.user : '';
-  const requestedCategory = isRequestParams ? req.body.category : '';
-  const isRequestParams = Object.keys(req.body).length !== 0 ? true : false;
-  const requestedUser = isRequestParams ? req.body.user : '';
-  const requestedCategory = isRequestParams ? req.body.category : '';
 
   convertToMap(categoriesData, categoriesMap);
   convertToMap(currenciesData, currenciesMap);
