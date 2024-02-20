@@ -7,7 +7,6 @@ router.get('/transactions', transactionsController.getAllTransactions);
 router.get('/transactions-grouped', transactionsController.getTransactionsGroupByDate);
 router.get('/transactions-by-day', groupedTransactionsController.getTransactionsGroupedByDay);
 router.post('/transactions-by-day', groupedTransactionsController.getTransactionsGroupedByDay);
-router.post('/transactions-by-day', groupedTransactionsController.getTransactionsGroupedByDay);
 router.post('/add-transaction', transactionsController.addTransaction);
 router.post('/add-transaction-transfer', transactionsController.addTransactionTransfer);
 
