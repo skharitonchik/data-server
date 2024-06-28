@@ -23,9 +23,9 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "adm-zip": "^0.5.10",
-    "dayjs": "^1.11.9",
     "body-parser": "^1.19.2",
     "cors": "^2.8.5",
+    "dayjs": "^1.11.9",
     "express": "^4.17.3",
     "prettier": "^2.7.1",
     "react": "latest",
@@ -45,5 +45,8 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:8088"
+  "proxy": "http://localhost:8088",
+  "devDependencies": {
+    "jest": "^27.5.1"
+  }
 }

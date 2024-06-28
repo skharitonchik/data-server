@@ -19,6 +19,15 @@ const FILE_PATHS = {
     todos: 'prod/todoLists.prod.json',
     filters: 'prod/filters.prod.json',
   },
+  test: {
+    categories: 'test/categories.json',
+    users: 'test/users.json',
+    cards: 'test/cards.json',
+    currencies: 'test/currencies.json',
+    transactions: 'test/transactions.json',
+    todos: 'test/todoLists.json',
+    filters: 'test/filters.json',
+  },
 };
 const filePaths = FILE_PATHS[ENVIRONMENT];
 

@@ -18,27 +18,68 @@ const categoriesController = new CommonController(envs.categories, 'CATEGORIES')
 const currenciesController = new CommonController(envs.currencies, 'CURRENCIES');
 const usersController = new CommonController(envs.users, 'USERS');
 
+
+const validateTransaction = (transactionConfig, reqBody) => {
+  const { user, category, date } = transactionConfig;
+  const requestedUser = reqBody.user;
+  const requestedCategory = reqBody.category;
+  const requestedDateFrom = reqBody.dateFrom ? dayjs(reqBody.dateFrom) : null;
+  const requestedDateTo = reqBody.dateTo ? dayjs(reqBody.dateTo) : null;
+
+  if (requestedUser && user !== requestedUser) {
+    return false;
+  }
+
+  if (requestedCategory && category !== requestedCategory) {
+    return false;
+  }
+
+  if (requestedDateFrom && requestedDateTo && (!dayjs(date).isSameOrAfter(requestedDateFrom, 'd') || !dayjs(date).isSameOrBefore(requestedDateTo, 'd'))) {
+    return false;
+  }
+
+  return true;
+};
+
+const convertToMap = (data) => new Map(data.map(item => [item.id, item.name]));
+
 function getTransactionsGroupedByDay(req, res) {
   const transactionsData = transactionsController.readData();
   const categoriesData = categoriesController.readData();
   const cardsData = cardsController.readData();
   const currenciesData = currenciesController.readData();
   const usersData = usersController.readData();
-  const categoriesMap = new Map();
+  const categoriesMap = convertToMap(categoriesData);
+  const currenciesMap = convertToMap(currenciesData);
+  const usersMap = convertToMap(usersData);
   const cardsMap = new Map();
-  const currenciesMap = new Map();
-  const usersMap = new Map();
-  const groupedTransactions = {};
-  const requestedUser = req.body.user;
-  const requestedCategory = req.body.category;
-  const requestedDateFrom = req.body.dateFrom ? dayjs(req.body.dateFrom) : null;
-  const requestedDateTo = req.body.dateTo ? dayjs(req.body.dataTo) : null;
+  const allPlus = {};
+  const allMinus = {};
+  const dateGroups = {};
 
-  const convertToMap = (data, map) => data.forEach((d) => map.set(d.id, d.name));
+  const updateMoney = (moneyObj, money, currency) => {
+    if (moneyObj[currency]) {
+      moneyObj[currency] += money;
+    } else {
+      moneyObj[currency] = money;
+    }
+  };
 
-  convertToMap(categoriesData, categoriesMap);
-  convertToMap(currenciesData, currenciesMap);
-  convertToMap(usersData, usersMap);
+  const updateAllPlus = (money, currency) => {
+    if (!allPlus[currency]) {
+      allPlus[currency] = 0;
+    }
+
+    allPlus[currency] += money;
+  };
+
+  const updateAllMinus = (money, currency) => {
+    if (!allMinus[currency]) {
+      allMinus[currency] = 0;
+    }
+
+    allMinus[currency] += money;
+  };
 
   cardsData.forEach((card) => {
     cardsMap.set(card.id, {
@@ -54,59 +95,45 @@ function getTransactionsGroupedByDay(req, res) {
     const formattedCard = cardsMap.get(card);
     const { currency, user } = formattedCard;
 
-    if(requestedUser && user !== requestedUser) {
+    if (!validateTransaction({ date, category, user }, req.body)) {
       return;
     }
 
-    if(requestedCategory && category !== requestedCategory) {
-      return;
-    }
-
-    if (requestedDateFrom && requestedDateTo && !(dayjs(date).isSameOrAfter(requestedDateFrom, 'd') && dayjs(date).isSameOrBefore(requestedDateTo, 'd'))) {
-      return;
+    if(type === 20 || type === 21){
+      return
     }
 
     if (category) {
       t.category = categoriesMap.get(category);
     }
 
-    if (type === 20) {
-      t.category = 'Перевод -';
-    }
-
-    if (type === 21) {
-      t.category = 'Перевод +';
-    }
-
     t.card = formattedCard;
 
-    if (groupedTransactions.hasOwnProperty(formattedDate)) {
-      groupedTransactions[formattedDate].transactions.push(t);
+    if (dateGroups.hasOwnProperty(formattedDate)) {
+      dateGroups[formattedDate].transactions.push(t);
 
       if (type === 1) {
-        if (groupedTransactions[formattedDate].plus[currency]) {
-          groupedTransactions[formattedDate].plus[currency] += money;
-        } else {
-          groupedTransactions[formattedDate].plus[currency] = money;
-        }
+        updateMoney(dateGroups[formattedDate].plus, money, currency);
+        updateAllPlus(money, currency);
       }
 
       if (type === 0) {
-        if (groupedTransactions[formattedDate].minus[currency]) {
-          groupedTransactions[formattedDate].minus[currency] += money;
-        } else {
-          groupedTransactions[formattedDate].minus[currency] = money;
-        }
+        updateMoney(dateGroups[formattedDate].minus, money, currency);
+        updateAllMinus(money, currency);
       }
     } else {
-      const plus = type === 1 ? { [currency]: money } : {};
-      const minus = type === 0 ? { [currency]: money } : {};
+      type === 1 && updateAllPlus(money, currency);
+      type === 0 && updateAllMinus(money, currency);
 
-      groupedTransactions[formattedDate] = { plus, minus, transactions: [t] };
+      dateGroups[formattedDate] = {
+        plus: type === 1 ? { [currency]: money } : {},
+        minus: type === 0 ? { [currency]: money } : {},
+        transactions: [t],
+      };
     }
   });
 
-  res.send(groupedTransactions);
+  res.send({ allMinus, allPlus, dateGroups });
   res.end();
 }
 
