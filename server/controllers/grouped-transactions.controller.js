@@ -24,7 +24,7 @@ const validateTransaction = (transactionConfig, reqBody) => {
   const requestedUser = reqBody.user;
   const requestedCategory = reqBody.category;
   const requestedDateFrom = reqBody.dateFrom ? dayjs(reqBody.dateFrom) : null;
-  const requestedDateTo = reqBody.dateTo ? dayjs(reqBody.dataTo) : null;
+  const requestedDateTo = reqBody.dateTo ? dayjs(reqBody.dateTo) : null;
 
   if (requestedUser && user !== requestedUser) {
     return false;
@@ -41,22 +41,7 @@ const validateTransaction = (transactionConfig, reqBody) => {
   return true;
 };
 
-
-// const convertToMap = (data) => {
-//   const map = new Map();
-//
-//   data.forEach((d) => map.set(d.id, d.name));
-//
-//   return map;
-// };
 const convertToMap = (data) => new Map(data.map(item => [item.id, item.name]));
-const createNewGroupedTransaction = (transaction, type, money, currency) => {
-  return {
-    plus: type === 1 ? { [currency]: money } : {},
-    minus: type === 0 ? { [currency]: money } : {},
-    transactions: [transaction],
-  };
-};
 
 function getTransactionsGroupedByDay(req, res) {
   const transactionsData = transactionsController.readData();
