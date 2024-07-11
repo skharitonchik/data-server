@@ -13,8 +13,23 @@ const updateCategory = (req, res) => {
   commonController.putData(req, res);
 };
 
+const getCategoriesSettings = (req, res) => {
+  const categories = commonController.readData();
+
+  categories.sort((a, b) => a.type < b.type ? 1 : -1);
+
+  const categoriesNames = categories.map(c => ({
+    name: c.name,
+    type: c.type,
+  }));
+
+  res.send(categoriesNames);
+  res.end();
+};
+
 module.exports = {
   getAllCategories,
   addNewCategory,
   updateCategory,
+  getCategoriesSettings,
 };

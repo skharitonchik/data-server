@@ -1,11 +1,12 @@
-exports.processTransactions = (transactions, categories, cards) => {
+exports.processTransactions = (transactions, categories, cards, currencies) => {
   const yearlyData = {};
+  const currenciesMap = new Map(currencies.map(item => [item.id, item.name]));
   const categoryMap = categories.reduce((map, category) => {
     map[category.id] = category.name;
     return map;
   }, {});
   const cardCurrencyMap = cards.reduce((map, card) => {
-    map[card.id] = card.currency;
+    map[card.id] = currenciesMap.get(card.currency);
     return map;
   }, {});
 
@@ -19,6 +20,10 @@ exports.processTransactions = (transactions, categories, cards) => {
     const categoryId = transaction.category;
     const categoryName = categoryMap[categoryId] || 'Unknown';
     const amount = transaction.money;
+    //
+    // if(categoryId === '70f7369d-5516-4a36-89d5-5dc018bf6ba5'){
+    //   console.info('%c  SERGEY transaction', 'background: #222; color: #bada55', transaction);
+    // }
 
     if (!yearlyData[year]) {
       yearlyData[year] = {};

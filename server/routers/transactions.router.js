@@ -13,13 +13,15 @@ router.post('/transactions-by-month', (req, res) => {
   const transactionsController = new CommonController(envs.transactions, 'TRANSACTIONS');
   const categoriesController = new CommonController(envs.categories, 'CATEGORIES');
   const cardsController = new CommonController(envs.cards, 'CARDS');
+  const currenciesController = new CommonController(envs.currencies, 'CURRENCIES');
 
   const transactions = transactionsController.readData();
   const categories = categoriesController.readData();
   const cards = cardsController.readData();
+  const currencies = currenciesController.readData();
 
   try {
-    const transactionsProcessed = transactionsByMonth.processTransactions(transactions, categories, cards);
+    const transactionsProcessed = transactionsByMonth.processTransactions(transactions, categories, cards, currencies);
     res.send(transactionsProcessed);
   } catch (e) {
     console.error('Error occurred while processing transactions:', error);
