@@ -99,7 +99,19 @@ function getTransactionsGroupedByDay(req, res) {
       return;
     }
 
-    if(type === 20 || type === 21){
+    if(type === 20 || type === 21) {
+      t.category = type === 20 ? 'Перевод -' : 'Перевод +';
+      t.card = formattedCard;
+
+      if(dateGroups.hasOwnProperty(formattedDate)){
+        dateGroups[formattedDate].transactions.push(t);
+      } else {
+        dateGroups[formattedDate] = {
+          plus: {},
+          minus: {},
+          transactions: [t],
+        };
+      }
       return
     }
 
